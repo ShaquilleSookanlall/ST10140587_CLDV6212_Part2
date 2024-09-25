@@ -1,0 +1,94 @@
+﻿@model IEnumerable<Order>
+
+<h2 class="text-center my-4">Orders</h2>
+
+<div class="container">
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Order ID</th>
+                <th>Customer ID</th>
+                <th>Product ID</th>
+                <th>Order Date</th>
+                <th>Order Address</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in Model)
+            {
+                <tr>
+                    <td>@order.Order_Id</td>
+                    <td>@order.Customer_ID</td>
+                    <td>@order.Product_ID</td>
+                    <td>@order.Order_Date.ToString("MM/dd/yyyy")</td>
+                    <td>@order.Order_Address</td>
+                    <td>
+                        <div class="action-links">
+                            <a href="@Url.Action("Details", new { partitionKey = order.PartitionKey, rowKey = order.RowKey })" class="btn btn-info btn-sm">Details</a>
+                            <a href="@Url.Action("Delete", new { partitionKey = order.PartitionKey, rowKey = order.RowKey })" class="btn btn-danger btn-sm">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <a href="@Url.Action("Create")" class="btn btn-success mt-3">Create New Order</a>
+</div>
+
+<style>
+    .container {
+        margin-top: 20px;
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    .table {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+        .table thead {
+            background-color: #343a40;
+            color: #fff;
+        }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .table-bordered {
+        border: 1px solid #dee2e6;
+    }
+
+    .action-links {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 0.875rem;
+        border-radius: 4px;
+    }
+
+    .btn-info, .btn-warning, .btn-danger {
+        color: #fff;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: #fff;
+    }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+</style>
+@* //# Assistance provided by ChatGPT
+//# Code and support generated with the help of OpenAI's ChatGPT. *@

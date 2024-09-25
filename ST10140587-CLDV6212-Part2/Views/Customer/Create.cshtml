@@ -1,0 +1,19 @@
+﻿@model ST10140587_CLDV6212_Part2.Models.Customer
+
+<h1>Add New Customer</h1>
+
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label asp-for="Customer_Name"></label>
+        <input asp-for="Customer_Name" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Email"></label>  <!-- Ensure correct casing -->
+        <input asp-for="Email" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Password"></label>  <!-- Ensure correct casing -->
+        <input asp-for="Password" class="form-control" type="password" />
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

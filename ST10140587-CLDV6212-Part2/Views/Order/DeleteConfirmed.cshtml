@@ -1,0 +1,11 @@
+﻿@model Order
+
+<h2>Order Deleted</h2>
+
+<div class="alert alert-success">
+    <strong>Success!</strong> The order with ID <strong>@Model.Order_Id</strong> has been successfully deleted.
+</div>
+
+<div>
+    <a href="@Url.Action("Index")" class="btn btn-primary">Back to Orders List</a>
+</div>
