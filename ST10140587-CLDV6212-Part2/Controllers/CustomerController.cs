@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ST10140587_CLDV6212_Part2.Models;
 using System.Threading.Tasks;
 
+
+[Authorize(Roles = "Admin")]  // Restrict access to AdminsGG
 public class CustomerController : Controller
 {
     private readonly TableStorageService _tableStorageService;
@@ -17,21 +20,9 @@ public class CustomerController : Controller
         return View(users);
     }
 
-    public IActionResult Create()
-    {
-        return View();
-    }
+
 
     [HttpPost]
-    public async Task<IActionResult> Create(User user)
-    {
-        user.PartitionKey = "UsersPartition";
-        user.RowKey = Guid.NewGuid().ToString();
-
-        await _tableStorageService.AddUserAsync(user); // Changed to AddUserAsync
-        return RedirectToAction("Index");
-    }
-
     public async Task<IActionResult> Delete(string partitionKey, string rowKey)
     {
         await _tableStorageService.DeleteUserAsync(partitionKey, rowKey); // Changed to DeleteUserAsync

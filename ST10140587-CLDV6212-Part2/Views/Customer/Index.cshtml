@@ -5,14 +5,12 @@
 
 
 <h1>Customers</h1>
-<p>
-    <a href="@Url.Action("Create")" class="btn btn-primary">Add New Customer</a>
-</p>
+
 <table class="table">
     <thead>
         <tr>
             <th>Name</th>
-            <th>Email</th>  <!-- Ensure correct casing -->
+            <th>Email</th>  
             <th>Actions</th>
         </tr>
     </thead>
@@ -22,7 +20,7 @@
         {
                 <tr>
                     <td>@customer.User_Name</td>
-                    <td>@customer.Email</td>  <!-- Ensure correct casing -->
+                    <td>@customer.Email</td>  
                     <td>
                         <form asp-action="Delete" method="post" style="display:inline;">
                             <input type="hidden" name="partitionKey" value="@customer.PartitionKey" />

@@ -82,7 +82,7 @@ public class AccountController : Controller
             // Redirect to home page or admin page based on role
             if (user.Role == "Admin")
             {
-                return RedirectToAction("Index", "Admin"); // Redirect admins to an admin page
+                return RedirectToAction("Index", "Home"); // Redirect admins to an admin page
             }
 
             return RedirectToAction("Index", "Home"); // Redirect customers to the home page

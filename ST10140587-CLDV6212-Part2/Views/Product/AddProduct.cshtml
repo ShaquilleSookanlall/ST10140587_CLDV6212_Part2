@@ -1,24 +1,26 @@
 ﻿@model ST10140587_CLDV6212_Part2.Models.Product
 
-
-<h2 class="mb-4">Add New Product</h2>
-
-<form asp-action="AddProduct" method="post" enctype="multipart/form-data">
-    <div class="mb-3 form-floating">
-        <input type="text" class="form-control" id="ProductName" name="Product_Name" placeholder="Product Name" required />
-        <label for="ProductName">Name</label>
+<form asp-action="Create" enctype="multipart/form-data" method="post">
+    <div class="form-group">
+        <label asp-for="Product_Name" class="control-label"></label>
+        <input asp-for="Product_Name" class="form-control" />
+        <span asp-validation-for="Product_Name" class="text-danger"></span>
     </div>
-    <div class="mb-3 form-floating">
-        <textarea class="form-control" id="ProductDescription" name="Product_Description" placeholder="Product Description" style="height: 100px"></textarea>
-        <label for="ProductDescription">Description</label>
+    <div class="form-group">
+        <label asp-for="Product_Description" class="control-label"></label>
+        <input asp-for="Product_Description" class="form-control" />
+        <span asp-validation-for="Product_Description" class="text-danger"></span>
     </div>
-    <div class="mb-3">
-        <label class="form-label" for="ProductImage">Image</label>
-        <input type="file" class="form-control" id="ProductImage" name="file" required />
+    <div class="form-group">
+        <label asp-for="Price" class="control-label"></label>
+        <input asp-for="Price" class="form-control" />
+        <span asp-validation-for="Price" class="text-danger"></span>
     </div>
-    <div class="mb-3 form-floating">
-        <input type="number" class="form-control" id="ProductPrice" name="Price" placeholder="Price" required />
-        <label for="ProductPrice">Price</label>
+    <div class="form-group">
+        <label for="ProductImage" class="control-label">Upload Product Image</label>
+        <input type="file" name="ProductImage" id="ProductImage" class="form-control" />
     </div>
-    <button type="submit" class="btn btn-primary">Add Product</button>
+    <div class="form-group">
+        <input type="submit" value="Create" class="btn btn-primary" />
+    </div>
 </form>
