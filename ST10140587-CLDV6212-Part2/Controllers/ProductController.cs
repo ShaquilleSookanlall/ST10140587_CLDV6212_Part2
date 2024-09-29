@@ -1,20 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+using ST10140587_CLDV6212_Part2.Services;
 using ST10140587_CLDV6212_Part2.Models;
-using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
-using System;
 
 public class ProductController : Controller
 {
     private readonly TableStorageService _tableStorageService;
-    private readonly IHttpClientFactory _httpClientFactory;  // To make HTTP requests to Azure Functions
+    private readonly BlobService _blobService;
 
-    public ProductController(TableStorageService tableStorageService, IHttpClientFactory httpClientFactory)
+    public ProductController(TableStorageService tableStorageService, BlobService blobService)
     {
         _tableStorageService = tableStorageService;
-        _httpClientFactory = httpClientFactory;
+        _blobService = blobService;
     }
 
     // GET: Product
@@ -25,55 +22,36 @@ public class ProductController : Controller
     }
 
     // GET: Product/Create
-    public IActionResult AddProduct()
+    public async Task<IActionResult> AddProduct()
     {
+        var blobImages = await _blobService.GetProductImagesAsync();  // Get images from Blob Storage
+        ViewBag.Images = blobImages;  // Pass images to the view
         return View();
     }
 
     // POST: Product/Create
     [HttpPost]
-    public async Task<IActionResult> AddProduct(Product product, IFormFile productImage)
+    public async Task<IActionResult> AddProduct(Product product, string selectedImage)
     {
-        // Ensure an image is provided
-        if (productImage == null || productImage.Length == 0)
-        {
-            TempData["ErrorMessage"] = "Please upload a product image.";
-            return View(product);  // Reroute back to the form with an error message
-        }
-
         try
         {
-            // Step 1: Upload the image to Blob Storage via Azure Function
-            var httpClient = _httpClientFactory.CreateClient();
-            var content = new MultipartFormDataContent();
-
-            using (var stream = new MemoryStream())
+            // Step 1: Ensure the selected image is provided
+            if (string.IsNullOrEmpty(selectedImage))
             {
-                await productImage.CopyToAsync(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                var fileContent = new StreamContent(stream);
-                content.Add(fileContent, "file", productImage.FileName);
-
-                var response = await httpClient.PostAsync("http://localhost:7071/api/UploadProductImage", content);  // Azure Function URL
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    TempData["ErrorMessage"] = "Failed to upload the product image. Please try again.";
-                    return View(product);  // Reroute back to the form with an error message
-                }
+                TempData["ErrorMessage"] = "Please select a product image.";
+                return View(product);  // Reroute back to the form with an error message
             }
 
             // Step 2: Save product details to Azure Table Storage
             product.PartitionKey = "ProductsPartition";
             product.RowKey = Guid.NewGuid().ToString();
-            product.ImageUrl = productImage.FileName;  // Assuming the image file name is used to display the product image
+            product.ImageUrl = selectedImage;  // Assign selected image
 
             await _tableStorageService.AddProductAsync(product);
 
-            // If everything is successful, redirect to the product index with success notification
+            // Redirect to the product index with a success notification
             TempData["SuccessMessage"] = "Product added successfully!";
             return RedirectToAction("Index");
-
         }
         catch (Exception ex)
         {
@@ -84,5 +62,36 @@ public class ProductController : Controller
             TempData["ErrorMessage"] = "An error occurred while adding the product. Please try again.";
             return View(product);
         }
+    }
+
+    // GET: Product/DeleteProduct (confirmation page)
+    public async Task<IActionResult> DeleteProduct(string partitionKey, string rowKey)
+    {
+        var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
+        if (product == null)
+        {
+            return NotFound();
+        }
+        return View(product);  // Render the confirmation view
+    }
+
+    // POST: Product/DeleteProduct (delete product)
+    [HttpPost]
+    public async Task<IActionResult> ConfirmDelete(string partitionKey, string rowKey)
+    {
+        await _tableStorageService.DeleteProductAsync(partitionKey, rowKey);
+        TempData["SuccessMessage"] = "Product deleted successfully!";
+        return RedirectToAction("Index");
+    }
+
+    // GET: Product/Details
+    public async Task<IActionResult> Details(string partitionKey, string rowKey)
+    {
+        var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
+        if (product == null)
+        {
+            return NotFound();
+        }
+        return View(product);
     }
 }

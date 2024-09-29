@@ -1,6 +1,6 @@
 ﻿@model ST10140587_CLDV6212_Part2.Models.Product
 
-<form asp-action="Create" enctype="multipart/form-data" method="post">
+<form asp-action="AddProduct" method="post">
     <div class="form-group">
         <label asp-for="Product_Name" class="control-label"></label>
         <input asp-for="Product_Name" class="form-control" />
@@ -16,10 +16,18 @@
         <input asp-for="Price" class="form-control" />
         <span asp-validation-for="Price" class="text-danger"></span>
     </div>
+
+    <!-- Dropdown to choose from existing files -->
     <div class="form-group">
-        <label for="ProductImage" class="control-label">Upload Product Image</label>
-        <input type="file" name="ProductImage" id="ProductImage" class="form-control" />
+        <label for="selectedImage" class="control-label">Select Product Image</label>
+        <select name="selectedImage" id="selectedImage" class="form-control">
+            @foreach (var image in ViewBag.Images as List<string>)
+            {
+                <option value="@image">@image</option>
+            }
+        </select>
     </div>
+
     <div class="form-group">
         <input type="submit" value="Create" class="btn btn-primary" />
     </div>

@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Register HttpClientFactory to enable HttpClient usage in controllers
-builder.Services.AddHttpClient(); // This is the crucial line for resolving IHttpClientFactory
+builder.Services.AddHttpClient();
 
 // Register TableStorageService with configuration
 builder.Services.AddSingleton<TableStorageService>(sp =>
@@ -16,11 +16,18 @@ builder.Services.AddSingleton<TableStorageService>(sp =>
     return new TableStorageService(connectionString);
 });
 
+// Register BlobService for handling Blob Storage operations
+builder.Services.AddSingleton<BlobService>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
+    return new BlobService(connectionString);
+});
+
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/Account/Login";  // Redirect to login page if not authenticated
+        options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
     });
 
@@ -35,10 +42,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
-// Enable authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 

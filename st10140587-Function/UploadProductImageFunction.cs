@@ -53,7 +53,7 @@ public class UploadProductImageFunction
                     var fileName = contentDisposition.FileName.Value;
 
                     // Get Blob container and create if it doesn't exist
-                    var containerClient = _blobServiceClient.GetBlobContainerClient("product-images");
+                    var containerClient = _blobServiceClient.GetBlobContainerClient("products");
                     await containerClient.CreateIfNotExistsAsync();
 
                     // Upload the file to Blob Storage
