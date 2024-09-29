@@ -1,33 +1,29 @@
-﻿@model Order
+﻿@model ST10140587_CLDV6212_Part2.Models.Order
 
-<h2>Delete Order</h2>
+@{
+    ViewBag.Title = "Delete Order";
+}
 
-<h3>Are you sure you want to delete this?</h3>
+<h2>Are you sure you want to delete this order?</h2>
 
-<div>
-    <h4>Order</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">Order ID</dt>
-        <dd class="col-sm-10">@Model.Order_Id</dd>
+<div class="form-group">
+    <label>Order ID:</label>
+    <p>@Model.RowKey</p>
+</div>
 
-        <dt class="col-sm-2">Customer ID</dt>
-        <dd class="col-sm-10">@Model.Customer_ID</dd>
+<div class="form-group">
+    <label>Customer Name:</label>
+    <p>@Model.CustomerName</p>
+</div>
 
-        <dt class="col-sm-2">Product ID</dt>
-        <dd class="col-sm-10">@Model.Product_ID</dd>
-
-        <dt class="col-sm-2">Order Date</dt>
-        <dd class="col-sm-10">@Model.Order_Date.ToString("MM/dd/yyyy")</dd>
-
-        <dt class="col-sm-2">Order Address</dt>
-        <dd class="col-sm-10">@Model.Order_Address</dd>
-    </dl>
+<div class="form-group">
+    <label>Product Name:</label>
+    <p>@Model.ProductName</p>
 </div>
 
 <form asp-action="DeleteConfirmed" method="post">
     <input type="hidden" asp-for="PartitionKey" />
     <input type="hidden" asp-for="RowKey" />
-    <button type="submit" class="btn btn-danger">Delete</button>
-    <a href="@Url.Action("Index")" class="btn btn-secondary">Cancel</a>
+    <input type="submit" value="Delete" class="btn btn-danger" />
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>

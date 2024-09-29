@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using ST10140587_CLDV6212_Part2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +24,21 @@ builder.Services.AddSingleton<BlobService>(sp =>
     return new BlobService(connectionString);
 });
 
+// Register CartService
+builder.Services.AddScoped<CartService>();
+
+// Register IHttpContextAccessor
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+// ** Add session services **
+builder.Services.AddDistributedMemoryCache(); // Required for session state
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+    options.Cookie.HttpOnly = true; // Makes the session cookie accessible only via HTTP (not JavaScript)
+    options.Cookie.IsEssential = true; // Required for GDPR compliance
+});
+
 // Configure cookie authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -45,6 +61,9 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ** Add session middleware to the pipeline **
+app.UseSession(); // <-- This is required to enable session state
 
 app.MapControllerRoute(
     name: "default",

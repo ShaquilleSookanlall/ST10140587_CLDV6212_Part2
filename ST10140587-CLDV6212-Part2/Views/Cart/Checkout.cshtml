@@ -1,0 +1,48 @@
+﻿@model List<ST10140587_CLDV6212_Part2.Models.CartItem>
+
+@{
+    ViewBag.Title = "Checkout";
+}
+
+<h2>Checkout</h2>
+
+@if (Model.Count == 0)
+{
+    <p>Your cart is empty. Add some items first!</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ProductName</td>
+                    <td>@item.Quantity</td>
+                    <td>@String.Format("{0:C}", item.Price)</td>
+                    <td>@String.Format("{0:C}", item.Quantity * item.Price)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="cart-summary">
+        <p><strong>Total Items:</strong> @ViewBag.TotalQuantity</p>
+        <p><strong>Total Price:</strong> @String.Format("{0:C}", ViewBag.TotalPrice)</p>
+    </div>
+
+    <div class="checkout-actions">
+        <form asp-action="ConfirmOrder" method="post">
+            <button type="submit" class="btn btn-success">Confirm Order</button>
+        </form>
+        <a href="@Url.Action("Index", "Cart")" class="btn btn-secondary">Back to Cart</a>
+    </div>
+}

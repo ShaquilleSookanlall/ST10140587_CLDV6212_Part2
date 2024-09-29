@@ -213,4 +213,18 @@ public class TableStorageService
             throw new InvalidOperationException("Error updating order in Table Storage", ex);
         }
     }
+
+    public async Task<Product?> GetProductByIdAsync(int productId)
+    {
+        try
+        {
+            var products = _productTableClient.Query<Product>(p => p.Product_Id == productId);
+            return products.FirstOrDefault();
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+    }
+
 }

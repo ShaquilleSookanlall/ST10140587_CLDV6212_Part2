@@ -94,4 +94,28 @@ public class ProductController : Controller
         }
         return View(product);
     }
+
+    [HttpPost]
+    public async Task<IActionResult> AddToCart(int Product_Id)
+    {
+        var product = await _tableStorageService.GetProductByIdAsync(Product_Id);
+
+        if (product == null)
+        {
+            TempData["ErrorMessage"] = "Product not found.";
+            return RedirectToAction("Index");
+        }
+
+        // Get the cart from the session
+        List<Product> cart = HttpContext.Session.GetObjectFromJson<List<Product>>("Cart") ?? new List<Product>();
+
+        // Add the product to the cart
+        cart.Add(product);
+
+        // Save the cart back to the session
+        HttpContext.Session.SetObjectAsJson("Cart", cart);
+
+        TempData["SuccessMessage"] = $"{product.Product_Name} has been added to your cart.";
+        return RedirectToAction("Index");
+    }
 }
