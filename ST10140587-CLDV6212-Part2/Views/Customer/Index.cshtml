@@ -1,4 +1,8 @@
-﻿@model IEnumerable<ST10140587_CLDV6212_Part2.Models.Customer>
+﻿@model IEnumerable<ST10140587_CLDV6212_Part2.Models.User>
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+
 
 <h1>Customers</h1>
 <p>
@@ -17,7 +21,7 @@
 
         {
                 <tr>
-                    <td>@customer.Customer_Name</td>
+                    <td>@customer.User_Name</td>
                     <td>@customer.Email</td>  <!-- Ensure correct casing -->
                     <td>
                         <form asp-action="Delete" method="post" style="display:inline;">

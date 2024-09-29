@@ -6,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllersWithViews();
 
+// Register HttpClientFactory to enable HttpClient usage in controllers
+builder.Services.AddHttpClient(); // This is the crucial line for resolving IHttpClientFactory
+
 // Register TableStorageService with configuration
 builder.Services.AddSingleton<TableStorageService>(sp =>
 {

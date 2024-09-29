@@ -8,15 +8,15 @@ using System;
 public class TableStorageService
 {
     private readonly TableClient _productTableClient;
-    private readonly TableClient _customerTableClient;
+    private readonly TableClient _userTableClient; // Renamed to users instead of customers
     private readonly TableClient _orderTableClient;
 
     public TableStorageService(string connectionString)
     {
         // Initialize TableClients for each entity
         _productTableClient = new TableClient(connectionString, "Products");
-        _customerTableClient = new TableClient(connectionString, "Customers");
-        _orderTableClient = new TableClient(connectionString, "Transactions");
+        _userTableClient = new TableClient(connectionString, "Users"); // Renamed from Customers to Users
+        _orderTableClient = new TableClient(connectionString, "Orders"); // Renamed from Transactions to Orders
     }
 
     // ------------------------------------------
@@ -75,55 +75,69 @@ public class TableStorageService
     }
 
     // ------------------------------------------
-    // CUSTOMERS TABLE OPERATIONS
+    // USERS (CUSTOMERS/ADMINS) TABLE OPERATIONS
     // ------------------------------------------
 
-    // Retrieve all customers
-    public async Task<List<Customer>> GetAllCustomersAsync()
+    // Retrieve all users
+    public async Task<List<User>> GetAllUsersAsync()
     {
-        var customers = new List<Customer>();
+        var users = new List<User>();
 
-        await foreach (var customer in _customerTableClient.QueryAsync<Customer>())
+        await foreach (var user in _userTableClient.QueryAsync<User>())
         {
-            customers.Add(customer);
+            users.Add(user);
         }
 
-        return customers;
+        return users;
     }
 
-    // Add a new customer (for registration)
-    public async Task AddCustomerAsync(Customer customer)
+    // Add a new user (for registration)
+    public async Task AddUserAsync(User user)
     {
-        if (string.IsNullOrEmpty(customer.PartitionKey) || string.IsNullOrEmpty(customer.RowKey))
+        if (string.IsNullOrEmpty(user.PartitionKey) || string.IsNullOrEmpty(user.RowKey))
         {
             throw new ArgumentException("PartitionKey and RowKey must be set.");
         }
 
         try
         {
-            await _customerTableClient.AddEntityAsync(customer);
+            await _userTableClient.AddEntityAsync(user);
         }
         catch (RequestFailedException ex)
         {
-            throw new InvalidOperationException("Error adding customer to Table Storage", ex);
+            throw new InvalidOperationException("Error adding user to Table Storage", ex);
         }
     }
 
-    // Delete a customer
-    public async Task DeleteCustomerAsync(string partitionKey, string rowKey)
+    // Delete a user
+    public async Task DeleteUserAsync(string partitionKey, string rowKey)
     {
-        await _customerTableClient.DeleteEntityAsync(partitionKey, rowKey);
+        await _userTableClient.DeleteEntityAsync(partitionKey, rowKey);
     }
 
-    // Get a specific customer (for login)
-    public async Task<Customer?> GetCustomerAsync(string partitionKey, string rowKey)
+    // Get a specific user (for login)
+    public async Task<User?> GetUserAsync(string partitionKey, string rowKey)
     {
         try
         {
-            var response = await _customerTableClient.GetEntityAsync<Customer>(partitionKey, rowKey);
+            var response = await _userTableClient.GetEntityAsync<User>(partitionKey, rowKey);
             return response.Value;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            return null;
+        }
+    }
+
+    // Retrieve a user by email and password for login
+    public async Task<User?> GetUserByEmailAndPasswordAsync(string email, string password)
+    {
+        try
+        {
+            var users = _userTableClient.Query<User>(u => u.Email == email && u.Password == password);
+            return users.FirstOrDefault(); // Assuming email and password match a single user
+        }
+        catch (RequestFailedException ex)
         {
             return null;
         }
@@ -196,7 +210,7 @@ public class TableStorageService
         }
         catch (RequestFailedException ex)
         {
-            throw new InvalidOperationException("Error updating order in Table Storage", ex); 
+            throw new InvalidOperationException("Error updating order in Table Storage", ex);
         }
     }
 }

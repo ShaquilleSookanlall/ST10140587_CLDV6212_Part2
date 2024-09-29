@@ -1,123 +1,121 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
 using ST10140587_CLDV6212_Part2.Models;
-using ST10140587_CLDV6212_Part2.ViewModels;
+using System.Net.Http;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 public class AccountController : Controller
 {
-    private readonly TableStorageService _tableStorageService;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly TableStorageService _tableStorageService; // To retrieve and display users
 
-    // Constructor for injecting the TableStorageService
-    public AccountController(TableStorageService tableStorageService)
+    public AccountController(IHttpClientFactory httpClientFactory, TableStorageService tableStorageService)
     {
+        _httpClientFactory = httpClientFactory;
         _tableStorageService = tableStorageService;
     }
 
-    // GET: Register
-    [HttpGet]
+    // ---------------------
+    // Register a new user (either customer or admin, depending on the role)
+    // ---------------------
+    [HttpPost]
+    public async Task<IActionResult> Register(User user)
+    {
+        var httpClient = _httpClientFactory.CreateClient();
+
+        // Convert user data to JSON
+        var jsonContent = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
+
+        // Send POST request to the Azure Function (or your local function endpoint)
+        var response = await httpClient.PostAsync("http://localhost:7267/api/RegisterUser", jsonContent);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Redirect to login page after successful registration
+            return RedirectToAction("Login", "Account");
+        }
+
+        // Handle registration failure (e.g., show error message)
+        ModelState.AddModelError("", "Error registering user.");
+        return View(user);
+    }
+
     public IActionResult Register()
     {
         return View();
     }
 
-    // POST: Register
-    [HttpPost]
-    public async Task<IActionResult> Register(RegisterViewModel model)
-    {
-        if (ModelState.IsValid)
-        {
-            var customer = new Customer
-            {
-                Customer_Id = new Random().Next(1, 1000),
-                Customer_Name = model.FullName,
-                Email = model.Email,
-                Password = HashPassword(model.Password),  // Hash the password before storing
-                Role = "User",  // Default role for new registrations
-                PartitionKey = "Customers",
-                RowKey = model.Email  // Use email as the RowKey
-            };
-
-            try
-            {
-                // Store in Azure Table Storage
-                await _tableStorageService.AddCustomerAsync(customer);
-                return RedirectToAction("Login", "Account");
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", $"Error: {ex.Message}");
-            }
-        }
-
-        return View(model);  // If model state is invalid, return the form with errors
-    }
-
-    // GET: Login
-    [HttpGet]
+    // ---------------------
+    // User Login
+    // ---------------------
     public IActionResult Login()
     {
         return View();
     }
 
-    // POST: Login
     [HttpPost]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(string email, string password)
     {
-        if (ModelState.IsValid)
+        // Retrieve user from Azure Table Storage using the email and password
+        var user = await _tableStorageService.GetUserByEmailAndPasswordAsync(email, password);
+
+        if (user != null)
         {
-            var customer = await _tableStorageService.GetCustomerAsync("Customers", model.Email);
-
-            if (customer != null && VerifyPassword(model.Password, customer.Password))
+            // Create claims for the logged-in user
+            var claims = new List<Claim>
             {
-                // Create claims for the user
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, customer.Customer_Name),
-                    new Claim(ClaimTypes.Email, customer.Email),
-                    new Claim(ClaimTypes.Role, customer.Role)  // Add role as a claim
-                };
+                new Claim(ClaimTypes.Name, user.User_Name),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)  // Admin or Customer
+            };
 
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var principal = new ClaimsPrincipal(identity);
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
-                // Sign in the user with cookie authentication
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            // Sign the user in
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-                return RedirectToAction("Index", "Home");
+            // Redirect to home page or admin page based on role
+            if (user.Role == "Admin")
+            {
+                return RedirectToAction("Index", "Admin"); // Redirect admins to an admin page
             }
 
-            ModelState.AddModelError("", "Invalid email or password.");
+            return RedirectToAction("Index", "Home"); // Redirect customers to the home page
         }
 
-        return View(model);
+        // If the user is not found, show an error message
+        ModelState.AddModelError("", "Invalid login attempt.");
+        return View();
     }
 
-    // POST: Logout
-    [HttpPost]
+    // ---------------------
+    // User Logout
+    // ---------------------
     public async Task<IActionResult> Logout()
     {
+        // Sign out the user
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Login", "Account");
     }
 
-    // Helper to hash the password using SHA256
-    private string HashPassword(string password)
+    // ---------------------
+    // List users for admin view
+    // ---------------------
+    [HttpGet]
+    public async Task<IActionResult> Users()
     {
-        using var sha256 = SHA256.Create();
-        var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
-    }
+        // Only admins can view this page
+        if (User.IsInRole("Admin"))
+        {
+            var users = await _tableStorageService.GetAllUsersAsync(); // Fetch all users
+            return View(users);
+        }
 
-    // Helper to verify the hashed password
-    private bool VerifyPassword(string password, string storedHash)
-    {
-        using var sha256 = SHA256.Create();
-        var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        var hashedPassword = Convert.ToBase64String(bytes);
-        return hashedPassword == storedHash;
+        return Unauthorized(); // Redirect or show error if unauthorized access
     }
 }

@@ -7,7 +7,9 @@ var host = new HostBuilder()
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
-        // Add any other services you need here
+
+        // Add any custom services or dependencies needed by the function
+        services.AddSingleton<RegisterUserFunction>();  // Register the RegisterUserFunction
     })
     .Build();
 

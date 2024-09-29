@@ -13,8 +13,8 @@ public class CustomerController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var customers = await _tableStorageService.GetAllCustomersAsync();
-        return View(customers);
+        var users = await _tableStorageService.GetAllUsersAsync(); // Changed to GetAllUsersAsync
+        return View(users);
     }
 
     public IActionResult Create()
@@ -23,28 +23,28 @@ public class CustomerController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(Customer customer)
+    public async Task<IActionResult> Create(User user)
     {
-        customer.PartitionKey = "BirdersPartition";
-        customer.RowKey = Guid.NewGuid().ToString();
+        user.PartitionKey = "UsersPartition";
+        user.RowKey = Guid.NewGuid().ToString();
 
-        await _tableStorageService.AddCustomerAsync(customer);
+        await _tableStorageService.AddUserAsync(user); // Changed to AddUserAsync
         return RedirectToAction("Index");
     }
 
     public async Task<IActionResult> Delete(string partitionKey, string rowKey)
     {
-        await _tableStorageService.DeleteCustomerAsync(partitionKey, rowKey);
+        await _tableStorageService.DeleteUserAsync(partitionKey, rowKey); // Changed to DeleteUserAsync
         return RedirectToAction("Index");
     }
 
     public async Task<IActionResult> Details(string partitionKey, string rowKey)
     {
-        var customer = await _tableStorageService.GetCustomerAsync(partitionKey, rowKey);
-        if (customer == null)
+        var user = await _tableStorageService.GetUserAsync(partitionKey, rowKey); // Changed to GetUserAsync
+        if (user == null)
         {
             return NotFound();
         }
-        return View(customer);
+        return View(user);
     }
 }
