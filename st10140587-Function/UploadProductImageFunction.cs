@@ -1,13 +1,11 @@
-using Azure.Storage.Blobs;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
 using System;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
 
 public class UploadProductImageFunction
 {
@@ -15,96 +13,70 @@ public class UploadProductImageFunction
 
     public UploadProductImageFunction()
     {
+        // Retrieve the AzureWebJobsStorage connection string from environment variables
         string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         _blobServiceClient = new BlobServiceClient(storageConnectionString);
     }
 
     [Function("UploadProductImage")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
         FunctionContext executionContext)
     {
         var log = executionContext.GetLogger("UploadProductImageFunction");
-        log.LogInformation("Processing image upload for new product.");
+        log.LogInformation("Processing image upload request.");
 
         HttpResponseData response;
 
         try
         {
-            // Read the request content type to ensure it's a multipart/form-data request
-            if (!req.Headers.TryGetValues("Content-Type", out var contentType) || !contentType.ToString().Contains("multipart/form-data"))
+            // Step 1: Read the base64 string from the request body
+            var base64String = await req.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(base64String))
             {
-                log.LogError("Invalid content type. Expected multipart/form-data.");
+                log.LogError("No content found in the request body.");
                 response = req.CreateResponse(HttpStatusCode.BadRequest);
-                await response.WriteStringAsync("Invalid content type. Expected multipart/form-data.");
+                await response.WriteStringAsync("Request body is empty. Please send a base64 encoded string.");
                 return response;
             }
 
-            // Parse the form data manually by reading the request body
-            var boundary = MultipartRequestHelper.GetBoundary(contentType.ToString(), 70);
-            var reader = new MultipartReader(boundary, req.Body);
-            var section = await reader.ReadNextSectionAsync();
+            // Step 2: Convert the base64 string into a byte array (file content)
+            byte[] fileBytes = Convert.FromBase64String(base64String);
 
-            while (section != null)
+            // Step 3: Create or get the Blob container client for "products"
+            var containerClient = _blobServiceClient.GetBlobContainerClient("products");
+            await containerClient.CreateIfNotExistsAsync();  // Ensure the container exists
+
+            // Step 4: Generate a unique name for the uploaded file (e.g., uploaded_image_<timestamp>.jpg)
+            string fileName = $"uploaded_image_{DateTime.UtcNow:yyyyMMddHHmmss}.jpg";
+            var blobClient = containerClient.GetBlobClient(fileName);
+
+            // Step 5: Upload the byte array to Blob Storage as a new file
+            using (var stream = new MemoryStream(fileBytes))
             {
-                // This example assumes you're only uploading one file.
-                if (ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition) && contentDisposition.DispositionType.Equals("form-data") && contentDisposition.FileName.HasValue)
-                {
-                    var fileName = contentDisposition.FileName.Value;
-
-                    // Get Blob container and create if it doesn't exist
-                    var containerClient = _blobServiceClient.GetBlobContainerClient("products");
-                    await containerClient.CreateIfNotExistsAsync();
-
-                    // Upload the file to Blob Storage
-                    var blobClient = containerClient.GetBlobClient(fileName);
-                    using (var stream = section.Body)
-                    {
-                        await blobClient.UploadAsync(stream, true);
-                    }
-
-                    log.LogInformation($"File successfully uploaded: {fileName}");
-
-                    // Respond with success message
-                    response = req.CreateResponse(HttpStatusCode.OK);
-                    await response.WriteStringAsync($"Image {fileName} uploaded successfully.");
-                    return response;
-                }
-
-                section = await reader.ReadNextSectionAsync();
+                await blobClient.UploadAsync(stream, overwrite: true);
             }
 
-            log.LogError("No file found in the request.");
+            log.LogInformation($"File successfully uploaded as {fileName}");
+
+            // Step 6: Respond with the file name and success message
+            response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteStringAsync($"Image {fileName} uploaded successfully.");
+            return response;
+        }
+        catch (FormatException ex)
+        {
+            log.LogError($"Invalid base64 format: {ex.Message}");
             response = req.CreateResponse(HttpStatusCode.BadRequest);
-            await response.WriteStringAsync("No file found.");
+            await response.WriteStringAsync("Invalid base64 format. Please check the input.");
+            return response;
         }
         catch (Exception ex)
         {
             log.LogError($"Error uploading image: {ex.Message}");
             response = req.CreateResponse(HttpStatusCode.InternalServerError);
-            await response.WriteStringAsync("Error uploading image.");
+            await response.WriteStringAsync($"Error uploading image: {ex.Message}");
+            return response;
         }
-
-        return response;
-    }
-}
-
-// Helper class for parsing multipart/form-data
-public static class MultipartRequestHelper
-{
-    public static string GetBoundary(string contentType, int lengthLimit)
-    {
-        var boundary = HeaderUtilities.RemoveQuotes(MediaTypeHeaderValue.Parse(contentType).Boundary).Value;
-        if (string.IsNullOrWhiteSpace(boundary))
-        {
-            throw new InvalidDataException("Missing content-type boundary.");
-        }
-
-        if (boundary.Length > lengthLimit)
-        {
-            throw new InvalidDataException($"Multipart boundary length limit {lengthLimit} exceeded.");
-        }
-
-        return boundary;
     }
 }

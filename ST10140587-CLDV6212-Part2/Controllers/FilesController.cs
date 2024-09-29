@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System;
+using System.IO;
 
 public class FilesController : Controller
 {
@@ -16,46 +16,43 @@ public class FilesController : Controller
     // GET: Files/Index
     public IActionResult Index()
     {
-        // This will simply load the page
+        // Load the page for uploading files
         return View();
     }
 
-    // POST: Files/Upload
-    [HttpPost]
-    public async Task<IActionResult> Upload(IFormFile file)
+    // POST: Files/UploadImage
+    public async Task<IActionResult> UploadImage(IFormFile file)
     {
         if (file == null || file.Length == 0)
         {
-            TempData["ErrorMessage"] = "Please select a file to upload.";
+            TempData["ErrorMessage"] = "Please select a .jpg file to upload.";
             return RedirectToAction("Index");
         }
 
         try
         {
-            // Step 1: Prepare the HTTP client
-            var httpClient = _httpClientFactory.CreateClient();
-            var content = new MultipartFormDataContent();
-
-            // Step 2: Read the image file and add it to the request
-            using (var stream = new MemoryStream())
+            byte[] fileBytes;
+            using (var memoryStream = new MemoryStream())
             {
-                await file.CopyToAsync(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                var fileContent = new StreamContent(stream);
-                content.Add(fileContent, "file", file.FileName);
+                await file.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
 
-                // Step 3: Make the POST request to the Azure Function to upload the image
-                var response = await httpClient.PostAsync("http://localhost:7071/api/UploadProductImage", content);  // Update to Azure URL in production
+            var base64String = Convert.ToBase64String(fileBytes);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    TempData["SuccessMessage"] = "File uploaded successfully.";
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "Failed to upload the file.";
-                }
+            var httpClient = _httpClientFactory.CreateClient();
+            var content = new StringContent(base64String);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
+
+            var response = await httpClient.PostAsync("http://localhost:7267/api/UploadProductImage", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                TempData["SuccessMessage"] = "File uploaded successfully.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Failed to upload the file. Status: {response.StatusCode}";
             }
 
             return RedirectToAction("Index");
