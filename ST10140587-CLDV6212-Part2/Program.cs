@@ -10,6 +10,9 @@ builder.Services.AddControllersWithViews();
 // Register HttpClientFactory to enable HttpClient usage in controllers
 builder.Services.AddHttpClient();
 
+// Register HttpClientFactory
+builder.Services.AddHttpClient();
+
 // Register TableStorageService with configuration
 builder.Services.AddSingleton<TableStorageService>(sp =>
 {

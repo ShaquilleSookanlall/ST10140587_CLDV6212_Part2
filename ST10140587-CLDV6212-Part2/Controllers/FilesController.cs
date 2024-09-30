@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Http;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.IO;
+using Microsoft.AspNetCore.Authorization;
+
+[Authorize(Roles = "Admin")]  // Restrict access to Admins
+
 
 public class FilesController : Controller
 {

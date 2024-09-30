@@ -27,28 +27,28 @@ public class CartController : Controller
 
     // POST: Cart/AddToCart
     [HttpPost]
-    public async Task<IActionResult> AddToCart(string productId, int quantity)
+    public async Task<IActionResult> AddToCart(string productId)
     {
-        // Fetch product details from Table Storage
         var product = await _tableStorageService.GetProductAsync("ProductsPartition", productId);
-
         if (product == null)
         {
-            TempData["ErrorMessage"] = "Product not found.";
-            return RedirectToAction("Index", "Product");
+            return NotFound();
         }
 
-        // Add product to cart
+        // Create a new CartItem
         var cartItem = new CartItem
         {
             ProductId = product.RowKey,
             ProductName = product.Product_Name,
-            Quantity = quantity,
-            Price = (decimal)product.Price
+            Quantity = 1,
+            Price = (decimal)product.Price,
         };
 
+        // Add item to the cart
         _cartService.AddToCart(cartItem);
-        TempData["SuccessMessage"] = "Product added to cart.";
+
+        TempData["SuccessMessage"] = $"{product.Product_Name} has been added to your cart.";
+
         return RedirectToAction("Index", "Product");
     }
 

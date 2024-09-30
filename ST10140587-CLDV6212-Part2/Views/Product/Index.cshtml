@@ -1,41 +1,29 @@
 ﻿@model IEnumerable<ST10140587_CLDV6212_Part2.Models.Product>
 
+@{
+    ViewBag.Title = "Products";
+}
 
-<h1>Products</h1>
-<a href="@Url.Action("AddProduct", "Product")" class="btn btn-primary">Add New Product</a>
+<h2>Products</h2>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Image</th>
-            <th>Price</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var product in Model)
-        {
-            <tr>
-                <td>@product.Product_Name</td>
-                <td>@product.Product_Description</td>
-                <td>
-                    @if (!string.IsNullOrEmpty(product.ImageUrl))
-                    {
-                        <img src="@product.ImageUrl" alt="@product.Product_Name" style="width:100px;height:auto;" />
-                    }
-                </td>
-                <td>@product.Price</td>
-                <td>
-                    <form asp-action="DeleteProduct" method="post" style="display:inline;">
-                        <input type="hidden" name="partitionKey" value="@product.PartitionKey" />
-                        <input type="hidden" name="rowKey" value="@product.RowKey" />
-                        <input type="hidden" name="ImageUrl" value="@product.ImageUrl" />
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this product?');">Delete</button>
+<div class="row">
+    @foreach (var product in Model)
+    {
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <img class="card-img-top" src="@product.ImageUrl" alt="@product.Product_Name" style="width: 100%; height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">@product.Product_Name</h5>
+                    <p class="card-text">@product.Product_Description</p>
+                    <p><strong>Price: $@product.Price</strong></p>
+
+                    <!-- Add to Cart button -->
+                    <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                        <input type="hidden" name="productId" value="@product.RowKey" />
+                        <button type="submit" class="btn btn-primary">Add to Cart</button>
                     </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
