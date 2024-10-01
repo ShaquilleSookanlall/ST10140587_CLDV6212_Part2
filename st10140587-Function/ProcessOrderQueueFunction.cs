@@ -1,4 +1,5 @@
 using Azure.Data.Tables;
+using Azure.Storage.Queues;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -12,12 +13,19 @@ using System;
 public class ProcessOrderHttpFunction
 {
     private readonly TableClient _orderTableClient;
+    private readonly QueueClient _queueClient;
 
     public ProcessOrderHttpFunction()
     {
         // Initialize the TableClient with the connection string
         string storageConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         _orderTableClient = new TableClient(storageConnectionString, "Orders");
+
+        // Initialize the QueueClient with the connection string and queue name
+        _queueClient = new QueueClient(storageConnectionString, "orders");
+
+        // Ensure the queue exists, create it if not
+        _queueClient.CreateIfNotExists();
     }
 
     [Function("ProcessOrderHttp")]
@@ -28,6 +36,7 @@ public class ProcessOrderHttpFunction
         var logger = executionContext.GetLogger("ProcessOrderHttpFunction");
         logger.LogInformation("Processing order via HTTP request.");
 
+        // Read the request body and deserialize into an Order object
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         Order order;
 
@@ -43,6 +52,7 @@ public class ProcessOrderHttpFunction
             return badRequestResponse;
         }
 
+        // Check for missing required fields
         if (order == null || string.IsNullOrEmpty(order.CustomerName) || string.IsNullOrEmpty(order.ProductName))
         {
             logger.LogError("Invalid order: Missing required fields.");
@@ -51,24 +61,40 @@ public class ProcessOrderHttpFunction
             return badRequestResponse;
         }
 
+        // Set PartitionKey and RowKey for the order
         order.PartitionKey = "Orders";
         order.RowKey = Guid.NewGuid().ToString();
 
         try
         {
+            // Add the new order to Table Storage
             await _orderTableClient.AddEntityAsync(order);
-            logger.LogInformation("Order added successfully.");
+            logger.LogInformation("Order added successfully to Table Storage.");
+
+            // Prepare the queue message
+            string queueMessage = JsonSerializer.Serialize(new
+            {
+                CustomerName = order.CustomerName,
+                ProductName = order.ProductName,
+                OrderDate = order.OrderDate,
+                TotalPrice = order.TotalPrice
+            });
+
+            // Send the message to Queue Storage
+            await _queueClient.SendMessageAsync(queueMessage);
+            logger.LogInformation("Message sent to Queue Storage.");
         }
         catch (RequestFailedException ex)
         {
-            logger.LogError($"Error adding order to Table Storage: {ex.Message}");
+            logger.LogError($"Error adding order to Table Storage or sending message to Queue: {ex.Message}");
             var internalServerErrorResponse = req.CreateResponse(HttpStatusCode.InternalServerError);
-            await internalServerErrorResponse.WriteStringAsync("Error adding order to Table Storage.");
+            await internalServerErrorResponse.WriteStringAsync("Error processing the order.");
             return internalServerErrorResponse;
         }
 
+        // Return success response
         var response = req.CreateResponse(HttpStatusCode.OK);
-        await response.WriteStringAsync("Order processed successfully.");
+        await response.WriteStringAsync("Order processed successfully and message sent to queue.");
         return response;
     }
 }

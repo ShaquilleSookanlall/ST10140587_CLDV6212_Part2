@@ -2,9 +2,18 @@
 
 @{
     ViewBag.Title = "Products";
+    var isAdmin = User.IsInRole("Admin"); // Check if the user is an admin
 }
 
 <h2>Products</h2>
+
+@if (isAdmin)
+{
+    <!-- Add New Product button for admins -->
+    <div class="mb-4">
+        <a asp-controller="Product" asp-action="AddProduct" class="btn btn-success">Add New Product</a>
+    </div>
+}
 
 <div class="row">
     @foreach (var product in Model)
