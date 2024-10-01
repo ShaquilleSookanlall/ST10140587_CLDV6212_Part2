@@ -31,21 +31,29 @@ public class ProductController : Controller
 
     // POST: Product/Create
     [HttpPost]
-    public async Task<IActionResult> AddProduct(Product product, string selectedImage)
+    public async Task<IActionResult> AddProduct(Product product, IFormFile ImageUpload)
     {
         try
         {
-            // Step 1: Ensure the selected image is provided
-            if (string.IsNullOrEmpty(selectedImage))
+            // Step 1: Ensure the image file is provided
+            if (ImageUpload == null || ImageUpload.Length == 0)
             {
                 TempData["ErrorMessage"] = "Please select a product image.";
                 return View(product);  // Reroute back to the form with an error message
             }
 
-            // Step 2: Save product details to Azure Table Storage
+            // Step 2: Upload the image to Blob Storage
+            string imageUrl;
+            using (var stream = ImageUpload.OpenReadStream())
+            {
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(ImageUpload.FileName);
+                imageUrl = await _blobService.UploadAsync(stream, fileName);  // Assuming _blobService.UploadAsync saves the file to Blob and returns the URL
+            }
+
+            // Step 3: Save product details to Azure Table Storage
             product.PartitionKey = "ProductsPartition";
             product.RowKey = Guid.NewGuid().ToString();
-            product.ImageUrl = selectedImage;  // Assign selected image
+            product.ImageUrl = imageUrl;  // Assign uploaded image URL
 
             await _tableStorageService.AddProductAsync(product);
 
@@ -64,8 +72,9 @@ public class ProductController : Controller
         }
     }
 
+
     // GET: Product/DeleteProduct (confirmation page)
-    public async Task<IActionResult> DeleteProduct(string partitionKey, string rowKey)
+    public async Task<IActionResult> Delete(string partitionKey, string rowKey)
     {
         var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
         if (product == null)
@@ -75,25 +84,15 @@ public class ProductController : Controller
         return View(product);  // Render the confirmation view
     }
 
-    // POST: Product/DeleteProduct (delete product)
+    // POST: Product/DeleteConfirmed (delete product)
     [HttpPost]
-    public async Task<IActionResult> ConfirmDelete(string partitionKey, string rowKey)
+    public async Task<IActionResult> DeleteConfirmed(string partitionKey, string rowKey)
     {
         await _tableStorageService.DeleteProductAsync(partitionKey, rowKey);
         TempData["SuccessMessage"] = "Product deleted successfully!";
         return RedirectToAction("Index");
     }
 
-    // GET: Product/Details
-    public async Task<IActionResult> Details(string partitionKey, string rowKey)
-    {
-        var product = await _tableStorageService.GetProductAsync(partitionKey, rowKey);
-        if (product == null)
-        {
-            return NotFound();
-        }
-        return View(product);
-    }
 
     [HttpPost]
     public async Task<IActionResult> AddToCart(int Product_Id)

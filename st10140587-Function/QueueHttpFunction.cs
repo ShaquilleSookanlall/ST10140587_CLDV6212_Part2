@@ -29,7 +29,6 @@ public class QueueHttpFunction
         var logger = executionContext.GetLogger("AddOrderToQueue");
         logger.LogInformation("Received request to add order to the queue.");
 
-        // Read the request body and deserialize into an Order object
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         Order order;
 
@@ -45,7 +44,6 @@ public class QueueHttpFunction
             return badRequestResponse;
         }
 
-        // Check for missing required fields
         if (order == null || string.IsNullOrEmpty(order.CustomerName) || string.IsNullOrEmpty(order.ProductName))
         {
             logger.LogError("Invalid order: Missing required fields.");
@@ -56,7 +54,6 @@ public class QueueHttpFunction
 
         try
         {
-            // Prepare the queue message with a defined structure
             var queueMessage = JsonSerializer.Serialize(new QueueOrderMessage
             {
                 CustomerName = order.CustomerName,
@@ -64,7 +61,6 @@ public class QueueHttpFunction
                 TotalPrice = order.TotalPrice
             });
 
-            // Send the message to Queue Storage
             await _queueClient.SendMessageAsync(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(queueMessage)));
             logger.LogInformation("Message sent to Queue Storage.");
         }
@@ -76,13 +72,11 @@ public class QueueHttpFunction
             return internalServerErrorResponse;
         }
 
-        // Return success response
         var response = req.CreateResponse(HttpStatusCode.OK);
         await response.WriteStringAsync("Order successfully added to the queue.");
         return response;
     }
 
-    // Class representing the queue message structure
     public class QueueOrderMessage
     {
         public string CustomerName { get; set; }

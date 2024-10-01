@@ -2,28 +2,53 @@
 
 @{
     ViewBag.Title = "Products";
+    var isAdmin = User.IsInRole("Admin"); // Check if the user is an admin
 }
 
 <h2>Products</h2>
+
+@if (isAdmin)
+{
+    <!-- Add New Product button for admins -->
+    <div class="mb-4">
+        <a asp-controller="Product" asp-action="AddProduct" class="btn btn-success">Add New Product</a>
+    </div>
+}
 
 <div class="row">
     @foreach (var product in Model)
     {
         <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4 shadow-sm" style="height: 450px;">
+                <!-- Standardize card height -->
                 <img class="card-img-top" src="@product.ImageUrl" alt="@product.Product_Name" style="width: 100%; height: 200px; object-fit: cover;">
                 <div class="card-body">
-                    <h5 class="card-title">@product.Product_Name</h5>
-                    <p class="card-text">@product.Product_Description</p>
+                    <h5 class="card-title" style="min-height: 40px;">@product.Product_Name</h5> <!-- Standardize title height -->
+                    <p class="card-text" style="min-height: 60px;">@product.Product_Description</p> <!-- Standardize text height -->
                     <p><strong>Price: $@product.Price</strong></p>
 
-                    <!-- Add to Cart button -->
-                    <form asp-controller="Cart" asp-action="AddToCart" method="post">
-                        <input type="hidden" name="productId" value="@product.RowKey" />
-                        <button type="submit" class="btn btn-primary">Add to Cart</button>
-                    </form>
+                    <!-- Admins: Replace Add to Cart button with Delete Product button -->
+                    @if (isAdmin)
+                    {
+                        <a asp-controller="Product" asp-action="Delete" asp-route-partitionKey="@product.PartitionKey" asp-route-rowKey="@product.RowKey" class="btn btn-danger mt-2">
+                            Delete Product
+                        </a>
+                    }
+                    else
+                    {
+                        <!-- Regular users: Add to Cart button -->
+                        <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                            <input type="hidden" name="productId" value="@product.RowKey" />
+                            <button type="submit" class="btn btn-primary">Add to Cart</button>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
     }
+    }
 </div>
+
+@section Scripts {
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+}

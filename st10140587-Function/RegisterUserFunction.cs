@@ -30,7 +30,6 @@ public class RegisterUserFunction
 
         try
         {
-            // Read request body and deserialize into User model
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var user = JsonSerializer.Deserialize<User>(requestBody);
             if (user == null)
@@ -41,15 +40,12 @@ public class RegisterUserFunction
                 return response;
             }
 
-            // Generate PartitionKey and RowKey for the user
             user.PartitionKey = "Users";
-            user.RowKey = user.Email; // Assuming email is unique
+            user.RowKey = user.Email; 
 
-            // Add user to the Azure Table Storage (Users table)
             await _usersTableClient.AddEntityAsync(user);
             log.LogInformation($"User successfully added: {user.User_Name}, Role: {user.Role}");
 
-            // Create successful response
             response = req.CreateResponse(System.Net.HttpStatusCode.OK);
             await response.WriteStringAsync("User registered successfully.");
         }
