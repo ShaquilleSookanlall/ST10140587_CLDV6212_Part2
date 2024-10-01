@@ -13,6 +13,8 @@ public class AccountController : Controller
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly TableStorageService _tableStorageService; // To retrieve and display users
 
+    string registerUserUrl = "https://st10140587functionapp.azurewebsites.net/api/RegisterUser?code=J4hDZd94tFlf2ilnxSvZIkHlQmfc1QtejhSHId24JNzDAzFu_ECcyg==";
+
     public AccountController(IHttpClientFactory httpClientFactory, TableStorageService tableStorageService)
     {
         _httpClientFactory = httpClientFactory;
@@ -31,7 +33,7 @@ public class AccountController : Controller
         var jsonContent = new StringContent(JsonSerializer.Serialize(user), Encoding.UTF8, "application/json");
 
         // Send POST request to the Azure Function (or your local function endpoint)
-        var response = await httpClient.PostAsync("http://localhost:7267/api/RegisterUser", jsonContent);
+        var response = await httpClient.PostAsync(registerUserUrl, jsonContent);
 
         if (response.IsSuccessStatusCode)
         {

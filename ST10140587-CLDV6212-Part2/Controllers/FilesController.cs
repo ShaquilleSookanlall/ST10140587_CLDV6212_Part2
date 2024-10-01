@@ -12,6 +12,9 @@ public class FilesController : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory;
 
+    string uploadProductImageUrl = "https://st10140587functionapp.azurewebsites.net/api/UploadProductImage?code=peHZXlJH5bX5a5OL7OUrkuoSdaNn1PhBUDa9uR1rlt_mAzFuc4-bCg==";
+
+
     public FilesController(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
@@ -48,7 +51,7 @@ public class FilesController : Controller
             var content = new StringContent(base64String);
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain");
 
-            var response = await httpClient.PostAsync("http://localhost:7267/api/UploadProductImage", content);
+            var response = await httpClient.PostAsync(uploadProductImageUrl, content);
 
             if (response.IsSuccessStatusCode)
             {

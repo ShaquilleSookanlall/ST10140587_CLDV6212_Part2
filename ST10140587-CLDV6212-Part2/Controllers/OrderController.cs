@@ -15,6 +15,9 @@ public class OrderController : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory;  // For making HTTP requests to the Azure Function
 
+    string processOrderUrl = "https://st10140587functionapp.azurewebsites.net/api/ProcessOrderHttp?code=kBoYlYL3tYOvCyzh2MSKShg83hqGsYQmL6X6cJZ85VsRAzFuZb_B_w==";
+
+
     public OrderController(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
@@ -71,9 +74,9 @@ public class OrderController : Controller
             var content = new StringContent(serializedOrder, Encoding.UTF8, "application/json");
 
             // Step 5: Send the request to the Azure Function at the correct URL
-            var response = await httpClient.PostAsync("http://localhost:7267/api/ProcessOrderHttp", content);
+            var response = await httpClient.PostAsync(processOrderUrl, content);
 
-            if (response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode) // Check if the request was successful
             {
                 TempData["SuccessMessage"] = "Order created and processed successfully.";
             }
