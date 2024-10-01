@@ -19,7 +19,7 @@ public class UploadProductImageFunction
 
     [Function("UploadProductImage")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequestData req,
         FunctionContext executionContext)
     {
         var log = executionContext.GetLogger("UploadProductImageFunction");

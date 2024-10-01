@@ -23,7 +23,7 @@ public class QueueHttpFunction
 
     [Function("AddOrderToQueue")]
     public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequestData req,
         FunctionContext executionContext)
     {
         var logger = executionContext.GetLogger("AddOrderToQueue");

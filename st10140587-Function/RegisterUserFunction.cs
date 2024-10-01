@@ -20,7 +20,7 @@ public class RegisterUserFunction
 
     [Function("RegisterUser")]
     public async Task<HttpResponseData> RunAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
         FunctionContext executionContext)
     {
         var log = executionContext.GetLogger("RegisterUserFunction");
